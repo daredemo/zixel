@@ -15,6 +15,7 @@ const usage =
     \\
     \\Options:
     \\  -i, --image IMAGE     Set input image to IMAGE
+    \\  -s, --scale FACTOR    Scale image by FACTOR, ignores -x and -y
     \\  -x, --width WIDTH     Set output sixel image width to WIDTH (default: 200)
     \\  -y, --height HEIGHT   Set output sixel image height to HEIGHT (default: 200)
     \\  -c, --colors NUM      Set the number of colors to NUM (default: 256)
@@ -32,6 +33,7 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
     // defer allocator.free(args);
     var opt_image: ?[]const u8 = null;
+    var opt_scale: ?f32 = null;
     var opt_width: ?usize = null;
     var opt_height: ?usize = null;
     var opt_colors: ?usize = null;
@@ -59,6 +61,23 @@ pub fn main() !void {
                 );
                 opt_image = args[i];
                 if (opt_image.?.len == 0) opt_image = null;
+            } else if (std.mem.eql(u8, "-s", arg) or //
+                std.mem.eql(u8, "--scale", arg))
+            {
+                i += 1;
+                if (i >= args.len) std.zig.fatal(
+                    "Expected an floating point number after '{s}'.",
+                    .{arg},
+                );
+                if (opt_scale != null) std.zig.fatal(
+                    "Duplicate argument {s}.",
+                    .{arg},
+                );
+                opt_scale = try std.fmt.parseFloat(f32, args[i]);
+                if (opt_scale.? <= 0) std.zig.fatal(
+                    "Scale must be greater than 0.",
+                    .{},
+                );
             } else if (std.mem.eql(u8, "-x", arg) or //
                 std.mem.eql(u8, "--width", arg))
             {
@@ -118,6 +137,7 @@ pub fn main() !void {
         return std.process.cleanExit();
     }
     const the_image = opt_image.?;
+    const the_scale: ?f32 = opt_scale;
     const the_width: usize = opt_width orelse 200;
     const the_height: usize = opt_height orelse 200;
     const the_colors: usize = opt_colors orelse 256;
@@ -127,6 +147,7 @@ pub fn main() !void {
     _ = try sixelMaker(
         &buf_writer,
         the_image,
+        the_scale,
         the_width,
         the_height,
         the_colors,

@@ -19,6 +19,7 @@ Generate sixel from input image
 
 Options:
   -i, --image IMAGE     Set input image to IMAGE
+  -s, --scale FACTOR    Scale image by FACTOR, ignores -x and -y
   -x, --width WIDTH     Set output sixel image width to WIDTH (default: 200)
   -y, --height HEIGHT   Set output sixel image height to HEIGHT (default: 200)
   -c, --colors NUM      Set the number of colors to NUM (default: 256)

@@ -14,6 +14,8 @@ pub fn sixelMaker(
     writer: *BufWriter,
     /// Name of input image file
     filename: []const u8,
+    /// Scale image instead of using width/height
+    scale: ?f32,
     /// Width of the sixel
     width: usize,
     /// Height of the sixel
@@ -22,8 +24,12 @@ pub fn sixelMaker(
     number_colors: usize,
 ) !u8 {
     const MaxRGB: usize = 255;
+    var new_scale: ?f32 = null;
     var new_width: usize = 200;
     var new_height: usize = 200;
+    if (scale) |s| {
+        if (s <= 0) new_scale = scale;
+    }
     if (width > 0) {
         new_width = width;
     }
@@ -45,6 +51,18 @@ pub fn sixelMaker(
     );
     defer image.deinit();
 
+    const original_width = image.width;
+    const original_height = image.height;
+
+    if (scale) |_| {
+        const fw: f32 = @floatFromInt(original_width);
+        const fh: f32 = @floatFromInt(original_height);
+        const nw: usize = @intFromFloat(fw * new_scale.?);
+        const nh: usize = @intFromFloat(fh * new_scale.?);
+        if (nw > 0) new_width = nw;
+        if (nh > 0) new_height = nh;
+    }
+
     // Resized image
     var image_resized = try zigimg.Image.create(
         allocator,
@@ -53,9 +71,6 @@ pub fn sixelMaker(
         .rgb24,
     );
     defer image_resized.deinit();
-
-    const original_width = image.width;
-    const original_height = image.height;
 
     // Make sure that input image is RGB not RGBA
     try image.convert(.rgb24);
