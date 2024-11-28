@@ -4,10 +4,6 @@ pub const sixelMaker = @import(
     "ZixelImage.zig",
 ).sixelMaker;
 
-const BufWriter = @import(
-    "SimpleBufferedWriter.zig",
-).SimpleBufferedWriter;
-
 // Help message
 const usage =
     \\Usage: ./zixel [options]
@@ -31,7 +27,6 @@ pub fn main() !void {
     // Command line parameters
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    // defer allocator.free(args);
     var opt_image: ?[]const u8 = null;
     var opt_scale: ?f32 = null;
     var opt_width: ?usize = null;
@@ -142,7 +137,7 @@ pub fn main() !void {
     const the_height: usize = opt_height orelse 200;
     const the_colors: usize = opt_colors orelse 256;
     //
-    var buf_writer = BufWriter{};
+    var buf_writer = std.io.bufferedWriter(std.io.getStdOut().writer());
     defer _ = buf_writer.flush() catch unreachable;
     _ = try sixelMaker(
         &buf_writer,
@@ -152,5 +147,4 @@ pub fn main() !void {
         the_height,
         the_colors,
     );
-    // return 0;
 }

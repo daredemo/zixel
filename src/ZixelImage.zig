@@ -4,14 +4,10 @@ const zigimg = @import("zigimg");
 /// Maximum output color for the sixel
 pub const MAX_PALETTE_SIZE = 256;
 
-const BufWriter = @import(
-    "SimpleBufferedWriter.zig",
-).SimpleBufferedWriter;
-
 /// Generate sixel image from input image (PNG?)
 pub fn sixelMaker(
     /// Buffer writer to print sixel to the stdout
-    writer: *BufWriter,
+    writer: anytype,
     /// Name of input image file
     filename: []const u8,
     /// Scale image instead of using width/height
