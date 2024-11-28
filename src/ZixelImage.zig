@@ -57,6 +57,9 @@ pub fn sixelMaker(
     const original_width = image.width;
     const original_height = image.height;
 
+    // Make sure that input image is RGB not RGBA
+    try image.convert(.rgb24);
+
     // RESIZE IMAGE
     for (0..new_height) |y| {
         for (0..new_width) |x| {
