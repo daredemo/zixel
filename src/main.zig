@@ -1,8 +1,8 @@
 const std = @import("std");
 
-pub const sixelMaker = @import(
+pub const zixelImage = @import(
     "ZixelImage.zig",
-).sixelMaker;
+);
 
 // Help message
 const usage =
@@ -23,7 +23,7 @@ pub fn main() !void {
     // Memory allocations definitions
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    var allocator = gpa.allocator();
     // Command line parameters
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -133,18 +133,37 @@ pub fn main() !void {
     }
     const the_image = opt_image.?;
     const the_scale: ?f32 = opt_scale;
-    const the_width: usize = opt_width orelse 200;
-    const the_height: usize = opt_height orelse 200;
+    var the_width: usize = opt_width orelse 200;
+    var the_height: usize = opt_height orelse 200;
     const the_colors: usize = opt_colors orelse 256;
     //
-    var buf_writer = std.io.bufferedWriter(std.io.getStdOut().writer());
-    defer _ = buf_writer.flush() catch unreachable;
-    _ = try sixelMaker(
-        &buf_writer,
+    var img = try zixelImage.openImage(
+        &allocator,
         the_image,
+    );
+    defer img.deinit();
+    zixelImage.getNewSize(
         the_scale,
+        &the_width,
+        &the_height,
+        img.width,
+        img.height,
+    );
+    var image = try zixelImage.resizeSimpleRGB(
+        &allocator,
+        &img,
         the_width,
         the_height,
+    );
+    defer image.deinit();
+    var buf_writer = std.io.bufferedWriter(
+        std.io.getStdOut().writer(),
+    );
+    defer _ = buf_writer.flush() catch unreachable;
+    _ = try zixelImage.sixelMaker(
+        &buf_writer,
+        &allocator,
+        image,
         the_colors,
     );
 }
