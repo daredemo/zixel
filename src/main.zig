@@ -7,7 +7,7 @@ pub const zixelImage = @import(
 // Help message
 const usage =
     \\Usage: ./zixel [options]
-    \\Generate sixel from input image
+    \\Generate sixel from input image. Use scale=1 for images with transparency.
     \\
     \\Options:
     \\  -i, --image IMAGE     Set input image to IMAGE
@@ -15,6 +15,7 @@ const usage =
     \\  -x, --width WIDTH     Set output sixel image width to WIDTH (default: 200)
     \\  -y, --height HEIGHT   Set output sixel image height to HEIGHT (default: 200)
     \\  -c, --colors NUM      Set the number of colors to NUM (default: 256)
+    \\  -t, --threshold NUM   Set the alpha threshold to NUM (default: 0)
     \\  -h, --help            Show this help and exit
     \\
 ;
@@ -31,6 +32,7 @@ pub fn main() !void {
     var opt_scale: ?f32 = null;
     var opt_width: ?usize = null;
     var opt_height: ?usize = null;
+    var opt_threshold: ?u8 = null;
     var opt_colors: ?usize = null;
     //
     {
@@ -107,6 +109,23 @@ pub fn main() !void {
                     "Height must be greater than 0.",
                     .{},
                 );
+            } else if (std.mem.eql(u8, "-t", arg) or //
+                std.mem.eql(u8, "--threshold", arg))
+            {
+                i += 1;
+                if (i >= args.len) std.zig.fatal(
+                    "Expected an integer after '{s}'.",
+                    .{arg},
+                );
+                if (opt_height != null) std.zig.fatal(
+                    "Duplicate argument {s}.",
+                    .{arg},
+                );
+                opt_threshold = try std.fmt.parseInt(u8, args[i], 10);
+                // if (opt_height == 0) std.zig.fatal(
+                //     "Height must be greater than 0.",
+                //     .{},
+                // );
             } else if (std.mem.eql(u8, "-c", arg) or //
                 std.mem.eql(u8, "--colors", arg))
             {
@@ -135,6 +154,7 @@ pub fn main() !void {
     const the_scale: ?f32 = opt_scale;
     var the_width: usize = opt_width orelse 200;
     var the_height: usize = opt_height orelse 200;
+    const the_threshold: ?u8 = opt_threshold;
     const the_colors: usize = opt_colors orelse 256;
     //
     var img = try zixelImage.openImage(
@@ -149,21 +169,38 @@ pub fn main() !void {
         img.width,
         img.height,
     );
-    var image = try zixelImage.resizeSimpleRGB(
-        &allocator,
-        &img,
-        the_width,
-        the_height,
-    );
-    defer image.deinit();
     var buf_writer = std.io.bufferedWriter(
         std.io.getStdOut().writer(),
     );
     defer _ = buf_writer.flush() catch unreachable;
-    _ = try zixelImage.sixelMaker(
-        &buf_writer,
-        &allocator,
-        image,
-        the_colors,
-    );
+    if (the_threshold) |th| {
+        var image = try zixelImage.resizeSimpleRGBA(
+            &allocator,
+            &img,
+            the_width,
+            the_height,
+        );
+        defer image.deinit();
+        _ = try zixelImage.sixelMakerRGBA(
+            &buf_writer,
+            &allocator,
+            image,
+            the_colors,
+            th,
+        );
+    } else {
+        var image = try zixelImage.resizeSimpleRGB(
+            &allocator,
+            &img,
+            the_width,
+            the_height,
+        );
+        defer image.deinit();
+        _ = try zixelImage.sixelMaker(
+            &buf_writer,
+            &allocator,
+            image,
+            the_colors,
+        );
+    }
 }
